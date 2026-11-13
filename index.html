@@ -337,6 +337,24 @@ html[data-density="compact"] .roster{max-height:calc(100vh - 220px)}
 html[data-density="compact"] .brand p{display:none}
 html[data-density="compact"] .mteam{padding:8px 10px}
 @media (max-width:640px){.prefs{order:5}.iconbtn{padding:8px 10px}}
+/* ---- v7 ---- */
+.welcome{max-width:720px;margin:6px auto 18px}
+.wtitle{font-family:"Barlow Condensed";font-size:32px;font-weight:800;letter-spacing:.3px}
+.wform{display:flex;gap:8px;flex-wrap:wrap}
+.wform .field{flex:1;min-width:200px;font-size:16px;padding:12px 14px}
+.walt{margin-top:18px;color:var(--muted)}
+.walt summary{cursor:pointer;font-size:14px}
+.tlink{cursor:pointer}
+.tlink:hover{text-decoration:underline;text-underline-offset:3px}
+.pstr{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.prow{display:grid;grid-template-columns:44px 1fr 36px 70px;gap:10px;align-items:center}
+.prow .pos{text-align:center;margin:0}
+.prow .bar{height:10px;border-radius:6px;background:var(--line);overflow:hidden}
+.prow .bar i{display:block;height:100%}
+.prow .pr{font-family:"JetBrains Mono";font-size:13px;text-align:right}
+@media (min-width:641px){.tabs{max-width:100%;flex-wrap:wrap;width:auto}}
+#myTotal:empty{display:none}
+#profBody .mhead .av{width:56px;height:56px}
 </style>
 </head>
 <body>
@@ -347,19 +365,33 @@ html[data-density="compact"] .mteam{padding:8px 10px}
       <p>Shop your players, target someone else's, grade offers and see who's winning trades in your Sleeper league.</p>
     </div>
     <div class="loadbar">
-      <input id="leagueId" class="field" placeholder="Sleeper league ID" value="1388562911995125760" aria-label="Sleeper league ID">
+      <button id="userChip" class="iconbtn" style="display:none" title="Change user or league">Find my leagues</button>
       <select id="source" class="field" aria-label="Value source">
-        <option value="blend">Values: Blend (FC + DD)</option>
+        <option value="blend">Values: Blend (all sources)</option>
         <option value="fc">Values: FantasyCalc</option>
         <option value="dd">Values: Dynasty Dealer</option>
+        <option value="dp">Values: DynastyProcess</option>
+        <option value="ra">Values: Roster Audit</option>
       </select>
       <select id="leagueSwitch" class="field" aria-label="Switch league" style="display:none"></select>
-      <button id="loadBtn" class="btn">Load league</button>
       <button id="installBtn" class="btn ghost install">Install app</button>
       <div class="prefs"><button id="themeBtn" class="iconbtn" aria-label="Switch light or dark mode">☀ Light</button><button id="densityBtn" class="iconbtn" aria-pressed="false" title="Fit more on screen">Compact</button></div>
     </div>
   </header>
   <div id="status" class="status"></div>
+
+  <!-- ===== Welcome ===== -->
+  <section id="welcome" class="panel welcome" style="display:none">
+    <div class="pbody" style="padding:22px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div class="wtitle">Find your leagues</div><button id="wClose" class="mclose" aria-label="Close" style="display:none">×</button></div>
+      <p class="sub" style="margin:4px 0 14px;font-size:14px">Enter your Sleeper username. You'll see all your leagues, and your team is picked automatically.</p>
+      <form id="welcomeForm" class="wform"><input id="wUser" class="field" placeholder="Sleeper username" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="Sleeper username"><button class="btn" type="submit">Find my leagues</button></form>
+      <div id="wLeagues"></div>
+      <details class="walt"><summary>Or open a league by ID</summary>
+        <div class="wform" style="margin-top:8px"><input id="leagueId" class="field" placeholder="Sleeper league ID" inputmode="numeric" aria-label="Sleeper league ID"><button id="loadBtn" class="btn ghost">Open league</button></div>
+        <div class="sub" style="margin-top:6px">It's the long number in your league's address on sleeper.com.</div></details>
+    </div>
+  </section>
 
   <div id="leaguebar" class="leaguebar"></div>
   <nav id="tabs" class="tabs" role="tablist">
@@ -367,6 +399,7 @@ html[data-density="compact"] .mteam{padding:8px 10px}
     <button data-tab="fa" role="tab">Free Agency<span id="faBadge" class="badge" style="display:none"></span></button>
     <button data-tab="calc" role="tab">Trade Calculator</button>
     <button data-tab="market" role="tab">Market</button>
+    <button data-tab="teams" role="tab">Teams</button>
     <button data-tab="hist" role="tab">League Trades</button>
     <button data-tab="draft" role="tab">Rookie Draft</button>
     <button data-tab="stand" role="tab">Standings</button>
@@ -467,6 +500,7 @@ html[data-density="compact"] .mteam{padding:8px 10px}
             <span id="resCount" class="tag">—</span>
           </div>
         </div>
+        <div id="dlHint"></div>
         <div id="results" class="results"></div>
       </div>
     </section>
@@ -497,7 +531,7 @@ html[data-density="compact"] .mteam{padding:8px 10px}
       <div class="pbody linkbox" id="linkBox"><input id="linkOut" class="field" readonly aria-label="Share link"></div>
     </div>
     <div class="panel">
-      <div class="phead"><h2>Verdict</h2><button id="calcCopy" class="copy">Copy summary</button></div>
+      <div class="phead"><h2>Verdict</h2><div class="btnrow"><button id="calcImg" class="copy">Share image</button><button id="calcCopy" class="copy">Copy summary</button></div></div>
       <div id="calcSummary" class="summary"></div>
     </div>
     <div class="panel">
@@ -560,6 +594,12 @@ html[data-density="compact"] .mteam{padding:8px 10px}
     </div>
   </section>
 
+  <!-- ===== Team profiles ===== -->
+  <section id="teamsView" class="panel" style="display:none">
+    <div class="phead"><h2>Team profile</h2><select id="profTeam" class="field teamfilter" aria-label="Choose a team"></select></div>
+    <div id="profBody" class="pbody"></div>
+  </section>
+
   <!-- ===== Standings ===== -->
   <section id="standView" class="panel" style="display:none">
     <div class="phead"><h2>Standings & playoff odds</h2><button id="standReload" class="copy">Re-run simulation</button></div>
@@ -612,10 +652,10 @@ const S = {
   hist:null, histState:"idle", histErr:"",
   calc:{ n:2, teams:[null,null,null,null], items:[] }, pendingTrade:null,
   odds:null, oddsMeta:null, oddsState:"idle", dGive:new Set(), dGet:new Set(),
-  me:null, myLeagues:[], multi:null, multiState:"idle"
+  me:null, myLeagues:[], multi:null, multiState:"idle", nflState:null, wLoading:false
 };
 S.me = store.get("me");
-const HASH_TAB = { "#trade-finder":"trade", "#free-agency":"fa", "#calculator":"calc", "#league-trades":"hist", "#rookie-draft":"draft", "#standings":"stand", "#my-leagues":"mine", "#market":"market" };
+const HASH_TAB = { "#trade-finder":"trade", "#free-agency":"fa", "#calculator":"calc", "#league-trades":"hist", "#rookie-draft":"draft", "#standings":"stand", "#my-leagues":"mine", "#market":"market", "#teams":"teams" };
 
 // ---------- helpers ----------
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -690,38 +730,115 @@ async function loadValues(f, source){
   return { players:out, picks };
 }
 
-// Blend: rescale Dynasty Dealer onto FantasyCalc's scale using the top 200 players both list, then average.
-// In superflex, QBs use FantasyCalc only (it's built per QB format).
-function blendValues(fc, dd, superflex){
-  const common = [...fc.players.values()].filter(p => p.value > 0 && dd.players.get(p.id)?.value > 0).sort((a,b)=>b.value-a.value).slice(0,200);
-  const sF = common.reduce((s,p)=>s+p.value,0), sD = common.reduce((s,p)=>s+dd.players.get(p.id).value,0);
-  const k = sD ? sF/sD : 1;
-  const out = new Map();
-  for(const id of new Set([...fc.players.keys(), ...dd.players.keys()])){
-    const f = fc.players.get(id), d = dd.players.get(id);
-    const dv = d ? d.value * k : 0;
-    const pos = f?.pos || d?.pos;
-    let value;
-    if(f?.value > 0 && dv > 0) value = (superflex && pos === "QB") ? f.value : (f.value + dv) / 2;
-    else value = f?.value || dv;
-    out.set(id, { id, name:f?.name || d?.name, pos, team:(f?.team && f.team !== "FA") ? f.team : (d?.team || f?.team || "FA"),
-      age:f?.age ?? d?.age ?? null, yoe:f?.yoe ?? d?.yoe ?? null, value, redraft:f?.redraft || 0, trendPct:f?.trendPct || 0, src:{ fc:f?.value ?? null, dd:d ? dv : null } });
+// ---------- extra value sources ----------
+const SRC_ORDER = ["fc","dd","dp","ra"];
+const SRC_NAME = { fc:"FantasyCalc", dd:"Dynasty Dealer", dp:"DynastyProcess", ra:"Roster Audit" };
+const SRC_URL = { fc:"https://www.fantasycalc.com", dd:"https://www.dynastydealer.com", dp:"https://dynastyprocess.com", ra:"https://rosteraudit.com" };
+// Sources that publish separate 1QB / superflex values. Dynasty Dealer has one number, so in superflex its QB values are left out.
+const QB_AWARE = { fc:true, dp:true, ra:true, dd:false };
+async function getText(url){ const r = await fetch(url); if(!r.ok) throw new Error(`${r.status} from ${new URL(url).host}`); return r.text(); }
+function parseCSV(text){
+  const rows = []; let row = [], cell = "", q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){ if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if(c === '"') q = true;
+    else if(c === ","){ row.push(cell); cell = ""; }
+    else if(c === "\n" || c === "\r"){ if(c === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
   }
-  const picks = fc.picks.length ? fc.picks : dd.picks.map(p => ({ ...p, value:p.value * k }));
+  if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+  const head = (rows.shift() || []).map(h => h.trim());
+  return rows.filter(r => r.length > 1).map(r => Object.fromEntries(head.map((h,i) => [h, r[i]])));
+}
+const DP_BASE = "https://raw.githubusercontent.com/dynastyprocess/data/master/files/";
+// FantasyPros ID → Sleeper ID map from DynastyProcess's player ID file; cached for a week.
+async function dpIdMap(){
+  const c = store.get("dpids");
+  if(c && Date.now() - c.t < 7*864e5) return new Map(Object.entries(c.d));
+  const rows = parseCSV(await getText(DP_BASE + "db_playerids.csv"));
+  const d = {};
+  for(const r of rows) if(r.fantasypros_id && r.sleeper_id && r.fantasypros_id !== "NA" && r.sleeper_id !== "NA") d[String(r.fantasypros_id)] = String(r.sleeper_id);
+  store.set("dpids", { t:Date.now(), d });
+  return new Map(Object.entries(d));
+}
+async function loadValuesDP(f){
+  const out = new Map(), picks = [];
+  const [csv, map] = await Promise.all([getText(DP_BASE + "values.csv"), dpIdMap()]);
+  const col = f.qbs === 2 ? "value_2qb" : "value_1qb";
+  for(const r of parseCSV(csv)){
+    const v = +r[col] || 0, pos = String(r.pos || "").toUpperCase();
+    if(pos === "PICK"){ const pk = parsePickName(r.player); if(pk) picks.push({ ...pk, value:v, name:r.player }); continue; }
+    const sid = map.get(String(r.fp_id)); if(!sid || !v) continue;
+    out.set(sid, { id:sid, name:r.player, pos, team:r.team && r.team !== "NA" ? r.team : "FA", age:r.age && r.age !== "NA" ? +r.age : null, yoe:null, value:v, redraft:0, trendPct:0 });
+  }
+  return { players:out, picks };
+}
+async function loadValuesRA(f){
+  const out = new Map();
+  const key = f.qbs === 2 ? "sf" : "1qb";
+  const fk = `${key}_${f.ppr === 1 ? "ppr" : f.ppr === 0.5 ? "half" : "std"}`;
+  let data = await getJSON(`https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${fk}`).catch(() => null);
+  if(!data || typeof data !== "object" || !Object.keys(data).length) data = await getJSON(`https://rosteraudit.com/wp-json/ra/v1/rankings/values`);
+  const obj = (data.players && !Array.isArray(data.players)) ? data.players : (data.values && !Array.isArray(data.values) ? data.values : data);
+  for(const [sid, e] of Object.entries(obj || {})){
+    if(!/^\d+$/.test(sid) || !e || typeof e !== "object") continue;
+    const v = +(e[key] ?? e["val_" + key]) || 0; if(!v) continue;
+    out.set(sid, { id:sid, name:e.name || null, pos:e.position || null, team:e.team || null, age:e.age ?? null, yoe:null, value:v, redraft:0, trendPct:0 });
+  }
+  return { players:out, picks:[] };
+}
+
+// Blend any number of sources: rescale each onto the first source's scale using the top 200 players they share, then average.
+function blendMany(list, superflex){
+  const base = list[0], scale = { [base.s]:1 };
+  for(const x of list.slice(1)){
+    const common = [...base.v.players.values()].filter(p => p.value > 0 && x.v.players.get(p.id)?.value > 0).sort((a,b)=>b.value-a.value).slice(0,200);
+    const sB = common.reduce((s,p)=>s+p.value,0), sX = common.reduce((s,p)=>s+x.v.players.get(p.id).value,0);
+    scale[x.s] = sX ? sB / sX : 1;
+  }
+  const ids = new Set(list.flatMap(x => [...x.v.players.keys()]));
+  const out = new Map();
+  for(const id of ids){
+    const ent = list.map(x => ({ s:x.s, p:x.v.players.get(id) })).filter(e => e.p && e.p.value > 0);
+    if(!ent.length) continue;
+    const first = k => ent.map(e => e.p[k]).find(v => v != null && v !== "" && v !== "FA");
+    const pos = first("pos");
+    const vals = ent.map(e => ({ s:e.s, v:e.p.value * scale[e.s] }));
+    let use = vals;
+    if(superflex && pos === "QB"){ const aware = vals.filter(x => QB_AWARE[x.s]); if(aware.length) use = aware; }
+    const fc = ent.find(e => e.s === "fc")?.p;
+    out.set(id, { id, name:first("name"), pos, team:first("team") || "FA", age:first("age") ?? null, yoe:first("yoe") ?? null,
+      value:avg(use.map(x => x.v)), redraft:fc?.redraft || 0, trendPct:fc?.trendPct || 0, src:Object.fromEntries(vals.map(x => [x.s, x.v])) });
+  }
+  const pk = list.find(x => x.v.picks.length);
+  const picks = pk ? pk.v.picks.map(p => ({ ...p, value:p.value * scale[pk.s] })) : [];
   return { players:out, picks };
 }
 
 async function loadAllValues(f, choice){
-  const want = choice === "blend" ? ["fc","dd"] : [choice];
-  const res = await Promise.allSettled(want.map(s => loadValues(f, s)));
+  const load = src => src === "dp" ? loadValuesDP(f) : src === "ra" ? loadValuesRA(f) : loadValues(f, src);
+  const want = choice === "blend" ? SRC_ORDER : [choice];
+  const res = await Promise.allSettled(want.map(load));
   let ok = want.map((s,i) => ({ s, v:res[i].status === "fulfilled" ? res[i].value : null })).filter(x => x.v && x.v.players.size);
+  res.forEach((r,i) => { if(r.status === "rejected") console.warn(`${SRC_NAME[want[i]]} values unavailable:`, r.reason); });
   if(!ok.length && choice !== "blend"){
-    const other = choice === "fc" ? "dd" : "fc";
-    try{ const v = await loadValues(f, other); if(v.players.size) ok = [{ s:other, v }]; }catch(e){}
+    for(const other of SRC_ORDER.filter(x => x !== choice)){
+      try{ const v = await load(other); if(v.players.size){ ok = [{ s:other, v }]; break; } }catch(e){}
+    }
   }
   if(!ok.length) throw (res.find(x => x.status === "rejected")?.reason || new Error("No value source responded"));
-  if(ok.length === 1) return { ...ok[0].v, used:[ok[0].s] };
-  return { ...blendValues(ok[0].v, ok[1].v, f.qbs === 2), used:["fc","dd"] };
+  const out = ok.length === 1 ? { ...ok[0].v, used:[ok[0].s] } : { ...blendMany(ok, f.qbs === 2), used:ok.map(x => x.s) };
+  // Some sources (Roster Audit) only send IDs + values: fill names/positions from Sleeper's player list.
+  if([...out.players.values()].some(p => !p.name || !p.pos)){
+    await loadPlayerDB();
+    for(const [id, p] of out.players){
+      const d = S.pdb?.[id];
+      if(d){ p.name = p.name || d[0]; p.pos = p.pos || d[1]; p.team = (p.team && p.team !== "FA") ? p.team : (d[2] || "FA"); p.age = p.age ?? d[3]; p.yoe = p.yoe ?? d[5]; }
+      if(!p.name || !p.pos) out.players.delete(id);
+    }
+  }
+  return out;
 }
 
 // ---------- draft picks ----------
@@ -808,15 +925,16 @@ async function loadLeague(){
   $("#loadBtn").disabled = true;
   try{
     setStatus("Loading league from Sleeper…", false, true);
-    const [league, users, rosters, traded, drafts] = await Promise.all([
+    const [league, users, rosters, traded, drafts, nflState] = await Promise.all([
       getJSON(`${SLEEPER}/league/${id}`),
       getJSON(`${SLEEPER}/league/${id}/users`),
       getJSON(`${SLEEPER}/league/${id}/rosters`),
       getJSON(`${SLEEPER}/league/${id}/traded_picks`).catch(()=>[]),
-      getJSON(`${SLEEPER}/league/${id}/drafts`).catch(()=>[])
+      getJSON(`${SLEEPER}/league/${id}/drafts`).catch(()=>[]),
+      getJSON(`${SLEEPER}/state/nfl`).catch(()=>null)
     ]);
     if(!league) throw new Error("League not found. Check the ID.");
-    S.league = league; S.users = users || []; S.rosters = rosters || [];
+    S.league = league; S.users = users || []; S.rosters = rosters || []; S.nflState = nflState;
     S.format = detectFormat(league);
     S.pickStart = (league.status === "pre_draft" || league.status === "drafting") ? +league.season : +league.season + 1;
     setStatus(`Loading dynasty values (${S.format.qbs===2?"Superflex":"1QB"}, ${S.format.ppr} PPR)…`, false, true);
@@ -870,8 +988,10 @@ async function loadLeague(){
     $("#partnerFilter").innerHTML = teamOpts; $("#histTeam").innerHTML = teamOpts; $("#mktTeam").innerHTML = teamOpts;
     S.hist = null; S.histState = "idle";
     store.set("league", id);
-    const srcTxt = S.used.length === 2 ? "blended values (FantasyCalc + Dynasty Dealer)" : S.used[0] === "fc" ? "FantasyCalc values" : "Dynasty Dealer values";
-    const fell = choice !== "blend" && S.used[0] !== choice ? " (your chosen source didn't respond)" : choice === "blend" && S.used.length === 1 ? ` (only ${S.used[0]==="fc"?"FantasyCalc":"Dynasty Dealer"} responded)` : "";
+    hideWelcome(); updateUserChip();
+    const srcTxt = S.used.length > 1 ? `blended values (${S.used.map(x => SRC_NAME[x]).join(" + ")})` : `${SRC_NAME[S.used[0]]} values`;
+    const missing = SRC_ORDER.filter(x => !S.used.includes(x));
+    const fell = choice !== "blend" && S.used[0] !== choice ? ` (${SRC_NAME[choice]} didn't respond)` : choice === "blend" && missing.length ? ` (${missing.map(x => SRC_NAME[x]).join(", ")} didn't respond)` : "";
     const orderTxt = S.draftOrder ? (S.draftOrder.kind === "set" ? ` · ${S.pickStart} draft order set` : ` · ${S.pickStart} picks projected from standings`) : "";
     setStatus(`Loaded ${S.teams.length} teams · ${fmt(S.values.size)} ${srcTxt}${fell}${orderTxt}.`);
     updateCredit();
@@ -889,8 +1009,7 @@ async function loadLeague(){
 }
 function updateCredit(){
   const src = [];
-  if(S.used.includes("fc")) src.push(`<a href="https://www.fantasycalc.com" target="_blank" rel="noopener">FantasyCalc</a>`);
-  if(S.used.includes("dd")) src.push(`<a href="https://www.dynastydealer.com" target="_blank" rel="noopener">Dynasty Dealer</a>`);
+  for(const x of S.used) src.push(`<a href="${SRC_URL[x]}" target="_blank" rel="noopener">${x === "ra" ? "RosterAudit.com" : SRC_NAME[x]}</a>`);
   $("#credit").innerHTML = `League data from the <a href="https://docs.sleeper.com" target="_blank" rel="noopener">Sleeper API</a>.` + (src.length ? ` Values by ${src.join(" + ")}.` : "");
 }
 
@@ -909,6 +1028,7 @@ function computePositionRanks(){
   for(const pos of SKILL){
     [...S.teams].sort((a,b)=>strength[b.rid][pos]-strength[a.rid][pos]).forEach((t,i)=>{ (S.posRank[t.rid] ||= {})[pos] = i+1; });
   }
+  S.posStrength = strength;
 }
 
 // Contender / Middle / Rebuilding from record (once 3+ games are played), roster value rank and value-weighted age.
@@ -1033,7 +1153,7 @@ function renderLeagueBar(){
   el.innerHTML = `<div class="lname">${esc(L.name)}</div>
     <span class="tag">${esc(L.season)}</span><span class="tag">${f.teams} teams</span>
     <span class="tag">${f.qbs===2?"Superflex":"1QB"}</span><span class="tag">${f.ppr} PPR${f.tep?` · TE+${f.tep}`:""}</span>
-    <span class="tag">${esc(L.status||"").replace("_"," ")}</span>
+    <span class="tag">${esc(L.status||"").replace("_"," ")}</span>${deadlineChip()}
     <a class="tag" style="text-decoration:none;color:var(--accent2)" href="https://sleeper.com/leagues/${esc(L.league_id)}" target="_blank" rel="noopener">Open in Sleeper ↗</a>`;
 }
 
@@ -1152,6 +1272,11 @@ function evaluate(partner, send, get, sendV, getV, extra={}){
   if(S.strategy === "rebuild"){ score -= clamp(oPct * 30, -5, 5); score -= get.filter(a=>a.kind==="pick").length * 1.2; }
   else if(S.strategy === "contend"){ score -= clamp(ldPct * 40, -5, 5); score += get.filter(a=>a.kind==="pick").length * 1.5; }
   else score -= clamp(ldPct * 10, -1.5, 1.5) + clamp(oPct * 5, -1, 1);
+  // Final two weeks before the deadline: contenders lean harder on this-season help, long shots on future value.
+  const dl = deadlineInfo(), myOdds = S.odds?.[me.rid]?.pct;
+  if(S.strategy === "balanced" && dl && dl.left != null && dl.left >= 0 && dl.left <= 2 && myOdds != null){
+    if(myOdds >= 0.5) score -= clamp(ldPct * 20, -3, 3); else if(myOdds <= 0.2) score -= clamp(oPct * 15, -3, 3);
+  }
   if(extra.sweetener) score += 0.8;
   if(S.mode === "buy") for(const a of send){ const r = me.coreRank.get(a.key); if(r < 3) score += 5; else if(r < 6) score += 2.5; }
   return { team:partner, send, get, sendV, getV, diff, score, theyNeed, iNeed, fit, ld, avgAge, outlook, ...extra };
@@ -1244,13 +1369,13 @@ function card(r, mx, i){
   tags.push(`<span class="tag">${r.team.wins}-${r.team.losses}${r.team.ties?`-${r.team.ties}`:""}</span>`);
   const getRaw = r.get.reduce((s,a)=>s+a.value,0), sendRaw = r.send.reduce((s,a)=>s+a.value,0);
   return `<article class="card">
-    <div class="top"><div class="who">${avatar(r.team)}<div><div class="tn">${esc(r.team.name)}</div><div class="sub">${esc(r.team.user)}</div></div></div>
+    <div class="top"><div class="who">${avatar(r.team)}<div><div class="tn tlink" data-team="${r.team.rid}" title="Team profile">${esc(r.team.name)}</div><div class="sub">${esc(r.team.user)}</div></div></div>
       <span class="verdict ${cls}">${label}</span></div>
     <div class="side"><h4>You get · ${fmt(r.getV)}${S.consol && r.get.length>1?` <span style="text-transform:none;letter-spacing:0">(adj., ${fmt(getRaw)} raw)</span>`:""}</h4>${r.get.map(a=>assetRow(a,{max:mx})).join("")}</div>
     <div class="side"><h4>You send · ${fmt(r.sendV)}${S.consol && r.send.length>1?` <span style="text-transform:none;letter-spacing:0">(adj., ${fmt(sendRaw)} raw)</span>`:""}</h4>${r.send.map(a=>assetRow(a,{max:mx, badge: r.sweetener && a.key===r.sweetener.key ? `<span class="slot">Sweetener</span>` : ""})).join("")}</div>
     <div class="meter" title="Value balance"><i style="width:${r.getV/tot*100}%;background:var(--accent2)"></i><i style="width:${r.sendV/tot*100}%;background:var(--accent)"></i></div>
     <div class="foot"><div class="tags">${tags.filter(Boolean).join("")}</div>
-      <div class="btnrow"><button class="copy" data-tocalc="${i}">Open in calculator</button><button class="copy" data-save="${i}">Save</button><button class="copy" data-copy="${i}">Copy offer</button></div></div>
+      <div class="btnrow"><button class="copy" data-tocalc="${i}">Open in calculator</button><button class="copy" data-save="${i}">Save</button><button class="copy" data-img="${i}">Image</button><button class="copy" data-copy="${i}">Copy offer</button></div></div>
   </article>`;
 }
 function dealToCalc(r){
@@ -1460,6 +1585,11 @@ function renderCalcSummary(){
     }
   }
   if(notes.length) html += `<div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">${notes.map(n => `<div class="sub">• ${n}</div>`).join("")}</div>`;
+  const counters = counterIdeas(); S._counters = counters;
+  if(counters.length){
+    html += `<div class="balance" style="border-style:solid;border-color:var(--accent2)"><div style="margin-bottom:6px"><b>Counter-offer ideas</b> <span class="sub">This deal costs you value. Any of these would make it fair:</span></div>` +
+      counters.map((c,i) => { const v = calcVerdict(c.p); return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line);flex-wrap:wrap"><span style="flex:1;min-width:200px">${c.text}</span><span class="pill ${v.cls}">${v.txt === "Fair" ? "Fair" : v.txt} for you</span><button class="copy" data-counter="${i}">Apply</button></div>`; }).join("") + `</div>`;
+  }
   if(warns.length) html += warns.map(w => `<div class="warnline">⚠ ${w}</div>`).join("");
   html += `<div class="sub" style="margin-top:10px">${S.consol?"Stud premium on (one star beats two halves). ":""}"Fair" means within 5%. Lineup Δ compares each team's best starting lineup by ${lineupUnit()} value.</div>`;
   box.innerHTML = html;
@@ -1587,7 +1717,7 @@ function renderHistory(){
   const rows = [...by.values()].sort((a,b) => b.net - a.net);
   sum.innerHTML = `<div class="sub" style="margin:8px 0 4px">${trades.length} trades across ${seasons.join(", ")}, graded with <b>today's</b> values. Picks already used are graded by the player taken.</div>
     <div class="hrow hd"><div>Team</div><div class="n">Trades</div><div class="n">Won</div><div class="n">Lost</div><div class="n hide-sm">Net value</div><div class="n hide-sm">Last trade</div></div>` +
-    rows.map(b => `<div class="hrow"><div class="tn2" style="display:flex;align-items:center;gap:8px;font-weight:700;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(teamName(b.rid))}${b.rid===S.myRosterId?" (you)":""}</span>${winChip(b.rid)}</div>
+    rows.map(b => `<div class="hrow"><div class="tn2" style="display:flex;align-items:center;gap:8px;font-weight:700;min-width:0"><span class="tlink" data-team="${b.rid}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(teamName(b.rid))}${b.rid===S.myRosterId?" (you)":""}</span>${winChip(b.rid)}</div>
       <div class="n">${b.n}</div><div class="n">${b.won}</div><div class="n">${b.lost}</div>
       <div class="n hide-sm" style="color:${b.net>=0?"var(--accent)":"var(--warn)"}">${b.n ? sgn(b.net) : "—"}</div>
       <div class="n hide-sm" style="font-family:Barlow;color:var(--muted)">${b.last ? fmtDate(b.last) : "never"}</div></div>`).join("");
@@ -1642,6 +1772,7 @@ async function loadStandings(force){
   if(S.tab === "stand") renderStandings();
   else if(S.tab === "trade") refreshTradeTab();
   else if(S.tab === "market") renderMarket();
+  else if(S.tab === "teams") renderTeams();
 }
 
 function simulate(scores, remaining, pteams, median){
@@ -1704,7 +1835,7 @@ function renderStandings(){
   html += `<div class="srow hd"><div>#</div><div>Team</div><div class="n">Record</div><div class="n hide-sm">Points for</div><div class="n hide-sm">Avg</div><div class="n hide-sm">Proj. W</div><div>Playoff odds</div></div>`;
   html += standing.map((r,i) => `<div class="srow ${r.rid===S.myRosterId?"me":""}">
       <div class="n" style="text-align:left;color:var(--muted)">${i+1}</div>
-      <div style="display:flex;align-items:center;gap:8px;min-width:0;font-weight:700"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(teamName(r.rid))}${r.rid===S.myRosterId?" (you)":""}</span>${winChip(r.rid)}</div>
+      <div style="display:flex;align-items:center;gap:8px;min-width:0;font-weight:700"><span class="tlink" data-team="${r.rid}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(teamName(r.rid))}${r.rid===S.myRosterId?" (you)":""}</span>${winChip(r.rid)}</div>
       <div class="n">${r.w}-${r.l}${r.t?`-${r.t}`:""}</div>
       <div class="n hide-sm">${r.pf ? r.pf.toFixed(1) : "—"}</div>
       <div class="n hide-sm">${r.avgPts ? r.avgPts.toFixed(1) : "—"}</div>
@@ -1813,6 +1944,7 @@ async function findUser(username){
   S.me = { user_id:String(u.user_id), username:u.username || username, display:u.display_name || username };
   store.set("me", S.me);
   await refreshMyLeagues();
+  updateUserChip();
   if(S.league){ const mine = S.rosters.find(r => r.owner_id === S.me.user_id || (r.co_owners || []).includes(S.me.user_id)); if(mine && mine.roster_id !== S.myRosterId){ $("#teamSelect").value = mine.roster_id; $("#teamSelect").dispatchEvent(new Event("change")); } }
 }
 function fillLeagueSwitch(){
@@ -1911,8 +2043,8 @@ function openPlayer(id){
       ${cell("In 2 years", a.value && a.age != null ? fmt(p2) : "—", a.value && a.age != null ? `${p2 >= a.value ? "+" : "−"}${Math.abs((p2/a.value - 1)*100).toFixed(0)}%` : "")}
       ${cell("Owner", owner ? (owner.rid === me ? "You" : esc(owner.name)) : "Free agent", owner ? `${status}${owner.rid !== me ? "" : ""}` : "available now")}
     </div>`;
-  if(src && src.fc != null && src.dd != null) html += `<div class="msec"><h4>Value sources</h4><div class="sub">FantasyCalc <b style="color:var(--text)">${fmt(src.fc)}</b> · Dynasty Dealer <b style="color:var(--text)">${fmt(src.dd)}</b> (rescaled) · blend <b style="color:var(--text)">${fmt(a.value)}</b>${S.format?.qbs === 2 && a.pos === "QB" ? " · superflex QBs use FantasyCalc only" : ""}</div></div>`;
-  if(owner) html += `<div class="msec"><h4>In this league</h4><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b>${esc(owner.name)}${owner.rid === me ? " (you)" : ""}</b>${winChip(owner.rid)}<span class="tag">${owner.wins}-${owner.losses}</span><span class="tag">${a.pos} room ranked ${S.posRank[owner.rid]?.[a.pos] ?? "—"} of ${S.teams.length}</span></div></div>`;
+  if(src && Object.keys(src).length > 1) html += `<div class="msec"><h4>Value sources</h4><div class="sub">${Object.entries(src).map(([k,v]) => `${SRC_NAME[k]} <b style="color:var(--text)">${fmt(v)}</b>`).join(" · ")} · blend <b style="color:var(--text)">${fmt(a.value)}</b><br>Rescaled to one scale, then averaged.${S.format?.qbs === 2 && a.pos === "QB" && src.dd != null ? " Superflex QBs leave out Dynasty Dealer (it has no superflex values)." : ""}</div></div>`;
+  if(owner) html += `<div class="msec"><h4>In this league</h4><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b class="tlink" data-team="${owner.rid}">${esc(owner.name)}${owner.rid === me ? " (you)" : ""}</b>${winChip(owner.rid)}<span class="tag">${owner.wins}-${owner.losses}</span><span class="tag">${a.pos} room ranked ${S.posRank[owner.rid]?.[a.pos] ?? "—"} of ${S.teams.length}</span></div></div>`;
   // other leagues
   if(S.multi?.leagues){
     const others = S.multi.leagues.filter(l => l.id !== S.league?.league_id && l.ids.includes(id));
@@ -1993,7 +2125,7 @@ function renderMarketSides(){
     }
   }
   sellers.sort((a,b) => b.score - a.score); buyers.sort((a,b) => b.score - a.score);
-  const head = (x) => `<div class="mt-h"><b>${esc(x.t.name)}</b><div style="display:flex;gap:6px;align-items:center">${winChip(x.t.rid)}${S.odds?.[x.t.rid] ? `<span class="tag" title="Playoff odds">${(S.odds[x.t.rid].pct*100).toFixed(0)}% playoffs</span>` : ""}</div></div>`;
+  const head = (x) => `<div class="mt-h"><b class="tlink" data-team="${x.t.rid}">${esc(x.t.name)}</b><div style="display:flex;gap:6px;align-items:center">${winChip(x.t.rid)}${S.odds?.[x.t.rid] ? `<span class="tag" title="Playoff odds">${(S.odds[x.t.rid].pct*100).toFixed(0)}% playoffs</span>` : ""}</div></div>`;
   const label = pos === "PICK" ? "picks" : `${pos}s`;
   $("#mktPosInfo").textContent = `${sellers.length} seller${sellers.length===1?"":"s"} · ${buyers.length} buyer${buyers.length===1?"":"s"}`;
   box.innerHTML = `<div class="mcol"><h3 style="color:var(--accent2)">Likely sellers of ${label}</h3>${sellers.length ? sellers.map(x => `<div class="mteam">${head(x)}<div class="why">${x.why.join(" · ")}</div>${x.items.map(a => row(a, x.t)).join("")}</div>`).join("") : `<div class="empty">No obvious sellers right now.</div>`}</div>
@@ -2092,6 +2224,256 @@ function applyPrefs(){
   const m = document.querySelector('meta[name="theme-color"]'); if(m) m.content = light ? "#f3f5fa" : "#0b1020";
 }
 
+// ---------- welcome / username-first ----------
+function updateUserChip(){
+  const c = $("#userChip");
+  c.textContent = S.me ? `@${S.me.username}` : "Find my leagues";
+  c.style.display = (S.league || S.me) ? "" : "none";
+}
+function showWelcome(){
+  $("#welcome").style.display = "";
+  if(S.me) $("#wUser").value = S.me.username;
+  renderWelcomeLeagues();
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+function hideWelcome(){ $("#welcome").style.display = "none"; }
+function renderWelcomeLeagues(){
+  const box = $("#wLeagues");
+  $("#wClose").style.display = S.league ? "" : "none";
+  if(!S.me){ box.innerHTML = ""; return; }
+  if(S.wLoading){ box.innerHTML = `<div class="sub" style="margin-top:12px"><span class="spinner"></span>Finding leagues for @${esc(S.me.username)}…</div>`; return; }
+  if(!S.myLeagues.length){ box.innerHTML = `<div class="warnline" style="margin-top:12px">No leagues found for @${esc(S.me.username)} this season. Check the spelling, or open a league by ID below.</div>`; return; }
+  const cur = S.league?.league_id;
+  box.innerHTML = `<div class="sect" style="margin:14px 0 6px">Your leagues · pick one</div>` + S.myLeagues.map(l => `<div class="lgcard ${l.id === cur ? "cur" : ""}">
+      <div class="what"><b>${esc(l.name)}</b><div class="sub">${l.typeName} · ${l.teams || "?"} teams · ${l.sf ? "Superflex" : "1QB"} · ${esc(l.season)}</div></div>
+      ${l.id === cur ? `<span class="tag" style="color:var(--accent2)">Open now</span>` : `<button class="btn" data-open="${esc(l.id)}">Open</button>`}</div>`).join("");
+}
+
+// ---------- trade deadline ----------
+function deadlineInfo(){
+  const L = S.league; if(!L) return null;
+  const dl = +(L.settings?.trade_deadline || 0);
+  if(!dl || dl >= 99 || L.status !== "in_season") return null;
+  const st = S.nflState;
+  const wk = (st && String(st.season) === String(L.season) && st.season_type === "regular") ? +st.week : null;
+  return { dl, left: wk ? dl - wk : null };
+}
+function deadlineChip(){
+  const d = deadlineInfo(); if(!d) return "";
+  if(d.left == null) return `<span class="tag">Trade deadline: week ${d.dl}</span>`;
+  if(d.left < 0) return `<span class="tag" style="color:var(--muted)">Trade deadline passed (week ${d.dl})</span>`;
+  const txt = d.left === 0 ? `Trade deadline is <b>this week</b> (week ${d.dl})` : `Trade deadline in <b>${d.left} week${d.left===1?"":"s"}</b> (week ${d.dl})`;
+  return `<span class="tag" style="${d.left <= 2 ? "color:var(--warn);border-color:var(--warn)" : ""}">⏱ ${txt}</span>`;
+}
+function renderDeadlineHint(){
+  const box = $("#dlHint"); if(!box) return;
+  const d = deadlineInfo(), me = myTeam();
+  if(!d || d.left == null || !me){ box.innerHTML = ""; return; }
+  if(d.left < 0){ box.innerHTML = `<div class="callout" style="margin:12px 16px 0;border-left-color:var(--muted)">The trade deadline passed in week ${d.dl}. Trades reopen after the season, so treat these as offseason ideas.</div>`; return; }
+  if(d.left > 2){ box.innerHTML = ""; return; }
+  const odds = S.odds?.[me.rid]?.pct;
+  const when = d.left === 0 ? "this week" : `in ${d.left} week${d.left===1?"":"s"}`;
+  let msg = `The trade deadline is ${when}.`, btn = "";
+  if(odds != null && odds >= 0.5){ msg += ` You have a ${(odds*100).toFixed(0)}% playoff chance: lean into win-now upgrades.`; if(S.strategy !== "contend") btn = `<button class="copy" data-strat="contend">Switch to Win now</button>`; }
+  else if(odds != null && odds <= 0.2){ msg += ` At ${(odds*100).toFixed(0)}% playoff odds, this is your last chance to sell veterans before the offseason.`; if(S.strategy !== "rebuild") btn = `<button class="copy" data-strat="rebuild">Switch to Rebuild</button>`; }
+  else if(odds != null) msg += ` You're on the bubble (${(odds*100).toFixed(0)}% playoff odds). Decide which way you're going.`;
+  box.innerHTML = `<div class="callout" style="margin:12px 16px 0;border-left-color:var(--warn);display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:200px">⏱ ${msg}</div>${btn}</div>`;
+}
+
+// ---------- counter-offer ideas ----------
+function counterIdeas(C = S.calc){
+  const res = calcResults(C);
+  if(res.length !== 2) return [];
+  const me = res.find(r => r.rid === S.myRosterId), them = res.find(r => r.rid !== S.myRosterId);
+  if(!me || !them || !me.sent.length || !them.sent.length || me.pct >= -0.03) return [];
+  const inTrade = new Set(C.items.map(i => i.key));
+  const theirPool = them.team.assets.filter(a => !inTrade.has(a.key) && (S.usePicks || a.kind !== "pick"));
+  const myPool = me.team.assets.filter(a => !inTrade.has(a.key) && !S.locked.has(a.key) && (S.usePicks || a.kind !== "pick"));
+  const pctOf = (sent, recv) => { const sv = pkgValue(sent), rv = pkgValue(recv); return (rv - sv) / Math.max(sv, rv, 1); };
+  const ok = p => p >= -0.05 && p <= 0.12;   // fair for you, and not so lopsided they'd laugh
+  const ideas = [];
+  for(const r of me.recv) for(const x of theirPool) if(x.value > r.value){
+    const p = pctOf(me.sent, me.recv.filter(a => a !== r).concat(x));
+    if(ok(p)) ideas.push({ kind:"swap", text:`Ask for <b>${esc(x.name)}</b> instead of ${esc(r.name)}`, p, remove:[r.key], add:[{ key:x.key, from:them.rid, to:me.rid }] });
+  }
+  for(const x of theirPool){
+    const p = pctOf(me.sent, [...me.recv, x]);
+    if(ok(p)) ideas.push({ kind:"add", text:`Ask them to add <b>${esc(x.name)}</b>`, p, remove:[], add:[{ key:x.key, from:them.rid, to:me.rid }] });
+  }
+  if(me.sent.length > 1) for(const s of me.sent){
+    const p = pctOf(me.sent.filter(a => a !== s), me.recv);
+    if(ok(p)) ideas.push({ kind:"drop", text:`Take <b>${esc(s.name)}</b> out of your side`, p, remove:[s.key], add:[] });
+  }
+  for(const s of me.sent) for(const y of myPool) if(y.value < s.value && y.value > s.value * 0.3){
+    const p = pctOf(me.sent.filter(a => a !== s).concat(y), me.recv);
+    if(ok(p)) ideas.push({ kind:"sub", text:`Offer <b>${esc(y.name)}</b> instead of ${esc(s.name)}`, p, remove:[s.key], add:[{ key:y.key, from:me.rid, to:them.rid }] });
+  }
+  // closest to "fair, slightly in your favor"; at most 2 of each kind, 5 total
+  ideas.sort((a,b) => Math.abs(a.p - 0.01) - Math.abs(b.p - 0.01));
+  const per = {}, out = [];
+  for(const i of ideas){ if((per[i.kind] = (per[i.kind] || 0) + 1) > 2) continue; out.push(i); if(out.length >= 5) break; }
+  return out;
+}
+
+// ---------- team profiles ----------
+let profRid = null;
+function openTeam(rid){ profRid = +rid; closePlayer(); showTab("teams"); window.scrollTo({ top:0, behavior:"smooth" }); }
+function teamHabits(rid){
+  if(S.histState !== "done") return null;
+  const got = {}, gave = {}; let n = 0, net = 0, won = 0, lost = 0, last = 0;
+  for(const tr of S.hist.trades){
+    const sd = tr.sides.find(s => s.rid === rid); if(!sd) continue;
+    n++; net += sd.net; last = Math.max(last, tr.at || 0); if(sd.pct > 0.05) won++; else if(sd.pct < -0.05) lost++;
+    for(const a of sd.got){ const k = a.kind === "pick" ? "PICK" : a.pos; got[k] = (got[k] || 0) + 1; }
+    for(const a of sd.gave){ const k = a.kind === "pick" ? "PICK" : a.pos; gave[k] = (gave[k] || 0) + 1; }
+  }
+  const lbl = k => k === "PICK" ? "draft picks" : `${k}s`;
+  const top = o => Object.entries(o).filter(([k]) => k !== "?").sort((a,b) => b[1] - a[1])[0];
+  const notes = [];
+  const g = top(got), s = top(gave);
+  if(g && g[1] >= 2) notes.push(`Usually buys ${lbl(g[0])} (${g[1]} acquired)`);
+  if(s && s[1] >= 2) notes.push(`Usually sells ${lbl(s[0])} (${s[1]} traded away)`);
+  return { n, net, won, lost, last, notes };
+}
+function renderTeams(){
+  if(!S.league) return;
+  const sel = $("#profTeam");
+  if(sel.dataset.l !== S.league.league_id){
+    sel.innerHTML = [...S.teams].sort((a,b) => a.name.localeCompare(b.name)).map(t => `<option value="${t.rid}">${esc(t.name)}${t.rid === S.myRosterId ? " (you)" : ""}</option>`).join("");
+    sel.dataset.l = S.league.league_id;
+  }
+  if(!profRid || !teamBy(profRid)) profRid = (S.teams.find(t => t.rid !== S.myRosterId) || S.teams[0])?.rid;
+  sel.value = profRid;
+  const t = teamBy(profRid), me = myTeam(), n = S.teams.length, w = S.windows[t.rid] || {};
+  const mx = maxValue(), isMe = t.rid === S.myRosterId;
+  const lineupRank = [...S.teams].sort((a,b) => (b.lineup||0) - (a.lineup||0)).indexOf(t) + 1;
+  const odds = S.odds?.[t.rid]?.pct;
+  let html = `<div class="mhead" style="border:0;padding:4px 0 12px">${avatar(t)}<div style="min-width:0"><div class="mname">${esc(t.name)}${isMe ? " (you)" : ""}</div>
+      <div class="sub">${esc(t.user)} · ${t.wins}-${t.losses}${t.ties ? `-${t.ties}` : ""}</div></div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${winChip(t.rid)}
+      ${odds != null ? `<span class="tag">${(odds*100).toFixed(0)}% playoff odds</span>` : ""}
+      <span class="tag">Roster value #${w.vrank ?? "—"} of ${n}</span><span class="tag">Starting lineup #${lineupRank} of ${n}</span>
+      ${w.age ? `<span class="tag">Value-weighted age ${w.age.toFixed(1)}</span>` : ""}</div>`;
+  // position strength
+  const maxS = {}; for(const pos of SKILL) maxS[pos] = Math.max(1, ...S.teams.map(x => S.posStrength?.[x.rid]?.[pos] || 0));
+  html += `<div class="sect">Position strength</div><div class="pstr">` + SKILL.map(pos => {
+    const r = S.posRank[t.rid]?.[pos] ?? n, v = S.posStrength?.[t.rid]?.[pos] || 0;
+    const lab = r <= Math.ceil(n/3) ? ["Strong","var(--accent)"] : r > Math.floor(2*n/3) ? ["Weak","var(--warn)"] : ["Average","var(--muted)"];
+    return `<div class="prow"><span class="pos" style="background:var(--${pos})">${pos}</span><div class="bar"><i style="width:${(v/maxS[pos]*100).toFixed(0)}%;background:var(--${pos})"></i></div><span class="pr">#${r}</span><span style="color:${lab[1]};font-weight:700;font-size:13px;min-width:62px">${lab[0]}</span></div>`;
+  }).join("") + `</div>`;
+  // picks
+  const picks = t.assets.filter(a => a.kind === "pick");
+  const bySeason = {}; for(const p of picks) (bySeason[p.season] ||= []).push(p);
+  html += `<div class="sect" style="margin-top:14px">Draft picks · ${fmt(picks.reduce((s,a)=>s+a.value,0))} total</div><div class="sub">` +
+    (Object.keys(bySeason).sort().map(s => `<b style="color:var(--text)">${s}:</b> ${bySeason[s].sort((a,b)=>a.round-b.round).map(p => `${ord(p.round)}${p.slot ? ` (${p.round}.${pad2(p.slot)})` : ""}${p.orig !== t.rid ? "*" : ""}`).join(", ")}`).join(" · ") || "None") +
+    (picks.some(p => p.orig !== t.rid) ? ` <span style="opacity:.8">(* acquired from another team)</span>` : "") + `</div>`;
+  // habits
+  const h = teamHabits(t.rid);
+  html += `<div class="sect" style="margin-top:14px">Trading habits</div>`;
+  if(!h){ html += `<div class="sub"><span class="spinner"></span>Loading league trade history…</div>`; loadHistory().then(() => { if(S.tab === "teams") renderTeams(); }); }
+  else if(!h.n) html += `<div class="sub">No trades in ${S.hist.seasons.join(", ")}. May be hard to deal with, or just waiting for the right offer.</div>`;
+  else html += `<div class="sub">${h.n} trade${h.n===1?"":"s"} · won ${h.won}, lost ${h.lost} · net <b style="color:${h.net>=0?"var(--accent)":"var(--warn)"}">${sgn(h.net)}</b> at today's values · last trade ${fmtDate(h.last)}${h.notes.length ? `<br>${h.notes.join(" · ")}` : ""}</div>`;
+  // top assets
+  html += `<div class="sect" style="margin-top:14px">Most valuable assets</div>` + t.assets.slice(0, 8).map(a => assetRow(a, { max:mx })).join("");
+  // matchmaking
+  if(!isMe && me){
+    const half = n / 2;
+    const theirWeak = SKILL.filter(p => (S.posRank[t.rid]?.[p] ?? 0) > half);
+    let want = me.assets.filter(a => a.kind === "player" && theirWeak.includes(a.pos) && !S.locked.has(a.key));
+    if(w.label === "Rebuilding") want = want.concat(me.assets.filter(a => a.kind === "pick" || (a.age && a.age <= 24)));
+    if(w.label === "Contender") want = want.filter(a => !a.age || a.age >= 24);
+    want = [...new Map(want.map(a => [a.key, a])).values()].filter(a => !S.locked.has(a.key)).sort((a,b) => b.value - a.value).slice(0, 5);
+    const myWeak = SKILL.filter(p => (S.posRank[me.rid]?.[p] ?? 0) > half);
+    const get = t.assets.filter(a => a.kind === "player" && myWeak.includes(a.pos) && (S.posRank[t.rid]?.[a.pos] ?? n) <= half)
+      .filter(a => t.assets.filter(x => x.pos === a.pos)[0]?.key !== a.key).slice(0, 5);
+    html += `<div class="mkt-grid" style="padding:14px 0 0">
+      <div class="mcol"><h3 style="color:var(--accent)">What they'd likely want from you</h3>
+        <div class="why">${theirWeak.length ? `Weak at ${theirWeak.join("/")}` : "No glaring weakness"}${w.label === "Rebuilding" ? " · rebuilding: likes picks and youth" : w.label === "Contender" ? " · contending: wants players who help now" : ""}</div>
+        ${want.length ? want.map(a => assetRow(a, { max:mx })).join("") : `<div class="empty">Nothing obvious on your roster.</div>`}
+        <div style="margin-top:8px"><button class="copy" data-mshop="${t.rid}">Shop my players to them</button></div></div>
+      <div class="mcol"><h3 style="color:var(--accent2)">What you could get from them</h3>
+        <div class="why">${myWeak.length ? `Their depth at your weak spots (${myWeak.join("/")})` : "You have no weak position"}</div>
+        ${get.length ? get.map(a => `<div class="mrow">${assetRow(a, { max:mx })}<button class="copy" data-mtarget="${esc(a.key)}" data-rid="${t.rid}">Target</button></div>`).join("") : `<div class="empty">No spare depth where you need it.</div>`}</div></div>`;
+  }
+  $("#profBody").innerHTML = html;
+}
+
+// ---------- shareable trade image ----------
+const POS_HEX = { QB:"#ff6b8b", RB:"#38d6c4", WR:"#6aa9ff", TE:"#ffb547", PICK:"#b48cff" };
+async function tradeImage(sides, sub){
+  try{ await document.fonts.ready; }catch(e){}
+  const W = 1080, P = 56, ROW = 64, HEAD = 70, GAP = 28;
+  const H = P + 120 + sides.reduce((s, sd) => s + HEAD + Math.max(1, sd.items.length) * ROW + GAP, 0) + 70 + P;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  const F = (w, size, fam="Barlow") => `${w} ${size}px "${fam}", system-ui, sans-serif`;
+  const fit = (t, max) => { if(g.measureText(t).width <= max) return t; while(t.length > 1 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
+  const grad = g.createLinearGradient(0, 0, W, H); grad.addColorStop(0, "#111a33"); grad.addColorStop(1, "#0b1020");
+  g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#b7f34a"; g.fillRect(0, 0, W, 8);
+  let y = P;
+  g.fillStyle = "#8c97b3"; g.font = F(600, 24); g.fillText(fit((S.league?.name || "").toUpperCase(), W - 2*P), P, y + 20);
+  g.fillStyle = "#e8ecf6"; g.font = F(800, 56, "Barlow Condensed"); g.fillText("TRADE PROPOSAL", P, y + 82);
+  y += 120;
+  for(const sd of sides){
+    g.fillStyle = "#18223b"; const boxH = HEAD + Math.max(1, sd.items.length) * ROW;
+    g.beginPath(); g.roundRect ? g.roundRect(P - 16, y, W - 2*P + 32, boxH, 18) : g.rect(P - 16, y, W - 2*P + 32, boxH); g.fill();
+    g.fillStyle = "#e8ecf6"; g.font = F(700, 34, "Barlow Condensed"); g.fillText(fit(`${sd.name} gets`, W - 2*P - 330), P + 4, y + 46);
+    g.textAlign = "right"; g.fillStyle = "#b7f34a"; g.font = F(700, 30, "JetBrains Mono"); const tw = g.measureText(fmt(sd.total)).width; g.fillText(fmt(sd.total), W - P - 4, y + 46);
+    if(sd.verdict){ g.font = F(700, 20); g.fillStyle = sd.verdict.cls === "p-win" ? "#b7f34a" : sd.verdict.cls === "p-fair" ? "#38d6c4" : "#ffb547"; g.fillText(sd.verdict.txt, W - P - 4 - tw - 20, y + 44); }
+    g.textAlign = "left";
+    let ry = y + HEAD;
+    if(!sd.items.length){ g.fillStyle = "#8c97b3"; g.font = F(500, 24); g.fillText("Nothing", P + 4, ry + 38); }
+    for(const a of sd.items){
+      const pos = a.kind === "pick" ? "PICK" : a.pos;
+      g.fillStyle = POS_HEX[pos] || "#8c97b3"; g.beginPath(); g.roundRect ? g.roundRect(P + 4, ry + 14, 70, 30, 7) : g.rect(P + 4, ry + 14, 70, 30); g.fill();
+      g.fillStyle = "#0b1020"; g.font = F(800, 18); g.textAlign = "center"; g.fillText(pos, P + 39, ry + 36); g.textAlign = "left";
+      g.fillStyle = "#e8ecf6"; g.font = F(600, 28); const nm = fit(a.name, W - 2*P - 360); g.fillText(nm, P + 92, ry + 39);
+      const meta = a.kind === "pick" ? a.team : `${a.team || ""}${a.age ? ` · ${(+a.age).toFixed(1)}` : ""}`;
+      const nw = g.measureText(nm).width;
+      g.fillStyle = "#8c97b3"; g.font = F(500, 20); const room = W - 2*P - 92 - nw - 14 - 150;
+      if(room > 40) g.fillText(fit(meta || "", room), P + 92 + nw + 14, ry + 38);
+      g.textAlign = "right"; g.fillStyle = "#c9d1e6"; g.font = F(500, 24, "JetBrains Mono"); g.fillText(fmt(a.value), W - P - 4, ry + 39); g.textAlign = "left";
+      ry += ROW;
+    }
+    y += boxH + GAP;
+  }
+  g.fillStyle = "#8c97b3"; g.font = F(500, 20);
+  g.fillText(fit(sub, W - 2*P), P, y + 24);
+  g.fillText(`${new Date().toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" })} · Dynasty Trade Finder`, P, y + 54);
+  return c;
+}
+function valuesCredit(){ return "Values: " + (S.used.length > 1 ? `blend of ${S.used.map(s => SRC_NAME[s]).join(", ")}` : SRC_NAME[S.used[0]] || "—") + (S.consol ? " · stud premium on" : ""); }
+async function showTradeImage(sides){
+  const c = await tradeImage(sides, valuesCredit());
+  const url = c.toDataURL("image/png");
+  const canShare = !!(navigator.canShare && window.File);
+  $("#pmBody").innerHTML = `<div class="mhead"><div class="mname">Share this trade</div><button class="mclose" data-mclose aria-label="Close">×</button></div>
+    <div style="padding:14px 16px"><img src="${url}" alt="Trade summary image" style="width:100%;border-radius:10px;border:1px solid var(--line)"></div>
+    <div class="mfoot"><button class="btn" id="imgCopy">Copy image</button>${canShare ? `<button class="btn ghost" id="imgShare">Share…</button>` : ""}<a class="btn ghost" id="imgDl" href="${url}" download="trade.png" style="text-decoration:none">Download</a><button class="btn ghost" data-mclose>Close</button></div>
+    <div class="sub" style="padding:0 16px 14px">Paste it into your league chat or a text. If a button doesn't work in this browser, press and hold (or right-click) the image to save or copy it.</div>`;
+  if(!$("#pModal").classList.contains("open")){ modalReturn = document.activeElement; $("#pModal").classList.add("open"); }
+  modalPid = null;
+  const blob = await new Promise(r => c.toBlob(r, "image/png"));
+  $("#imgCopy").onclick = async e => {
+    try{ await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); e.target.textContent = "Copied ✓"; }
+    catch(err){ e.target.textContent = "Copy not supported here"; }
+  };
+  const sh = $("#imgShare");
+  if(sh) sh.onclick = async () => {
+    const file = new File([blob], "trade.png", { type:"image/png" });
+    try{ if(navigator.canShare({ files:[file] })) await navigator.share({ files:[file], title:"Trade proposal" }); else toast("Sharing images isn't supported here"); }catch(err){}
+  };
+}
+function calcImageSides(){
+  return calcResults().map(r => ({ name:r.team.name, items:r.recv, total:r.recvV, verdict:calcVerdict(r.pct) }));
+}
+function dealImageSides(r){
+  const me = myTeam();
+  return [{ name:me?.name || "You", items:r.get, total:r.getV, verdict:calcVerdict((r.getV - r.sendV) / Math.max(r.getV, r.sendV, 1)) },
+          { name:r.team.name, items:r.send, total:r.sendV, verdict:calcVerdict((r.sendV - r.getV) / Math.max(r.getV, r.sendV, 1)) }];
+}
+
 // ---------- tabs ----------
 function showTab(tab){
   S.tab = tab;
@@ -2104,6 +2486,7 @@ function showTab(tab){
   $("#standView").style.display = tab === "stand" ? "" : "none";
   $("#mineView").style.display = tab === "mine" ? "flex" : "none";
   $("#marketView").style.display = tab === "market" ? "flex" : "none";
+  $("#teamsView").style.display = tab === "teams" ? "" : "none";
   $("#linkBox").style.display = "none";
   const hash = Object.keys(HASH_TAB).find(h => HASH_TAB[h] === tab && h !== "#trade-finder");
   try{ history.replaceState(null, "", location.pathname + (S.league ? `?league=${S.league.league_id}` : location.search) + (hash || "")); }catch(e){}
@@ -2114,9 +2497,10 @@ function showTab(tab){
   else if(tab === "stand"){ renderStandings(); updateFaBadge(); }
   else if(tab === "mine"){ renderMine(); updateFaBadge(); }
   else if(tab === "market"){ renderMarket(); updateFaBadge(); }
+  else if(tab === "teams"){ renderTeams(); updateFaBadge(); }
   else { renderRoster(); renderBlock(); search(); updateFaBadge(); }
 }
-function refreshTradeTab(){ renderRoster(); renderBlock(); search(); }
+function refreshTradeTab(){ renderRoster(); renderBlock(); renderDeadlineHint(); search(); }
 
 // ---------- events ----------
 $("#tabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if(b) showTab(b.dataset.tab); });
@@ -2342,15 +2726,73 @@ $("#mktTrades").addEventListener("click", e => {
 $("#themeBtn").addEventListener("click", () => { prefs.theme = prefs.theme === "light" ? "dark" : "light"; store.set("prefs", prefs); applyPrefs(); });
 $("#densityBtn").addEventListener("click", () => { prefs.density = prefs.density === "compact" ? "comfy" : "compact"; store.set("prefs", prefs); applyPrefs(); });
 
+// welcome screen
+$("#welcomeForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("#wUser").value.trim(); if(!name) return;
+  const btn = e.target.querySelector("button"); btn.disabled = true; btn.textContent = "Looking up…";
+  S.wLoading = true; S.me = S.me && S.me.username.toLowerCase() === name.toLowerCase() ? S.me : { username:name }; renderWelcomeLeagues();
+  try{
+    await findUser(name);
+    S.wLoading = false; renderWelcomeLeagues(); updateUserChip();
+    if(!S.league && S.myLeagues.length === 1) openLeague(S.myLeagues[0].id);
+  }catch(err){
+    S.wLoading = false; S.me = store.get("me");
+    $("#wLeagues").innerHTML = `<div class="warnline" style="margin-top:12px">⚠ ${esc(err.message || err)}</div>`;
+  }finally{ btn.disabled = false; btn.textContent = "Find my leagues"; }
+});
+$("#wLeagues").addEventListener("click", e => { const b = e.target.closest("[data-open]"); if(b) openLeague(b.dataset.open); });
+$("#wClose").addEventListener("click", hideWelcome);
+$("#userChip").addEventListener("click", showWelcome);
+// changing the value source reloads the current league with the new values
+$("#source").addEventListener("change", () => { if(S.league){ $("#leagueId").value = S.league.league_id; loadLeague(); } else store.set("source", $("#source").value); });
+// deadline hint buttons
+$("#dlHint").addEventListener("click", e => {
+  const b = e.target.closest("[data-strat]"); if(!b) return;
+  S.strategy = b.dataset.strat;
+  $("#strategy").querySelectorAll("button").forEach(x => x.classList.toggle("on", x.dataset.v === S.strategy));
+  renderDeadlineHint(); search();
+});
+// counter-offers
+$("#calcSummary").addEventListener("click", e => {
+  const b = e.target.closest("[data-counter]"); if(!b) return;
+  const idea = (S._counters || [])[+b.dataset.counter]; if(!idea) return;
+  S.calc.items = S.calc.items.filter(it => !idea.remove.includes(it.key)).concat(idea.add.map(x => ({ ...x })));
+  renderCalc(); toast("Counter applied");
+});
+// team profiles: tap any team name with data-team
+document.addEventListener("click", e => { const t = e.target.closest("[data-team]"); if(t){ e.preventDefault(); openTeam(t.dataset.team); } });
+$("#profTeam").addEventListener("change", e => { profRid = +e.target.value; renderTeams(); });
+// share images
+$("#calcImg").addEventListener("click", () => {
+  normalizeCalc(); if(calcResults().length < 2 || !S.calc.items.length){ toast("Build a trade first"); return; }
+  showTradeImage(calcImageSides());
+});
+$("#results").addEventListener("click", e => {
+  const b = e.target.closest("[data-img]"); if(!b) return;
+  const r = ($("#results")._data || [])[+b.dataset.img]; if(r) showTradeImage(dealImageSides(r));
+});
+
 // ---------- boot ----------
 const qs = new URLSearchParams(location.search);
-const startId = qs.get("league") || store.get("league");
-if(startId) $("#leagueId").value = startId;
+const startId = qs.get("league");
 const src = store.get("source"); if(src) $("#source").value = src;
 if(qs.get("trade")) S.pendingTrade = decodeTrade(qs.get("trade"));
 applyPrefs();
-if(S.me){ $("#username").value = S.me.username; refreshMyLeagues().catch(()=>{}); }
-loadLeague();
+updateUserChip();
+if(S.me){ $("#username").value = S.me.username; $("#wUser").value = S.me.username; }
+if(startId){                                   // a shared link or bookmark with ?league=
+  $("#leagueId").value = startId; loadLeague();
+  if(S.me) refreshMyLeagues().catch(() => {});
+} else if(S.me){                               // returning user: reopen their last league, or let them pick
+  S.wLoading = true; showWelcome();
+  refreshMyLeagues().catch(() => {}).finally(() => {
+    S.wLoading = false; renderWelcomeLeagues();
+    const last = store.get("league");
+    if(last && (S.myLeagues.some(l => l.id === last) || !S.myLeagues.length)) openLeague(last);
+    else if(S.myLeagues.length === 1) openLeague(S.myLeagues[0].id);
+  });
+} else showWelcome();                          // first visit: ask for a username
 })();
 </script>
 </body>
