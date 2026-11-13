@@ -1,7 +1,7 @@
 // Offline support for the installed app.
 // App files: network first (so updates show up right away), cached copy when offline.
 // League data and values: network first too, so you always see fresh numbers, with the last copy as an offline fallback.
-const CACHE = "trade-finder-v5";
+const CACHE = "trade-finder-v6";
 const APP_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const DATA_HOSTS = ["api.sleeper.app", "api.fantasycalc.com", "www.dynastydealer.com"];
 
