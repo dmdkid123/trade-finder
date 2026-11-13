@@ -1,7 +1,7 @@
 // Offline support for the installed app.
 // App files: network first (so updates show up right away), cached copy when offline.
 // League data and values: network first too, so you always see fresh numbers, with the last copy as an offline fallback.
-const CACHE = "trade-finder-v7";
+const CACHE = "trade-finder-v8";
 const APP_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const DATA_HOSTS = ["api.sleeper.app", "api.fantasycalc.com", "www.dynastydealer.com", "raw.githubusercontent.com", "rosteraudit.com"];
 
@@ -17,8 +17,9 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
   if(!sameOrigin && !DATA_HOSTS.includes(url.hostname)) return;   // fonts, images: browser default
+  // App files skip the browser's HTTP cache (GitHub Pages lets it hold pages ~10 min), so uploads show up on the next refresh.
   e.respondWith(
-    fetch(req).then(res => {
+    fetch(sameOrigin ? new Request(req.url, { cache:"no-cache", credentials:"same-origin" }) : req).then(res => {
       if(res.ok){ const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: sameOrigin }).then(hit => hit || (sameOrigin ? caches.match("./index.html") : Response.error())))
