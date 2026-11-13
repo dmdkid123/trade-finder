@@ -369,7 +369,6 @@ html[data-density="compact"] .mteam{padding:8px 10px}
       <select id="source" class="field" aria-label="Value source">
         <option value="blend">Values: Blend (all sources)</option>
         <option value="fc">Values: FantasyCalc</option>
-        <option value="dd">Values: Dynasty Dealer</option>
         <option value="dp">Values: DynastyProcess</option>
         <option value="ra">Values: Roster Audit</option>
       </select>
@@ -731,7 +730,7 @@ async function loadValues(f, source){
 }
 
 // ---------- extra value sources ----------
-const SRC_ORDER = ["fc","dd","dp","ra"];
+const SRC_ORDER = ["fc","dp","ra"];   // Dynasty Dealer removed at your request (code kept, just not used)
 const SRC_NAME = { fc:"FantasyCalc", dd:"Dynasty Dealer", dp:"DynastyProcess", ra:"Roster Audit" };
 const SRC_URL = { fc:"https://www.fantasycalc.com", dd:"https://www.dynastydealer.com", dp:"https://dynastyprocess.com", ra:"https://rosteraudit.com" };
 // Sources that publish separate 1QB / superflex values. Dynasty Dealer has one number, so in superflex its QB values are left out.
@@ -2777,6 +2776,7 @@ $("#results").addEventListener("click", e => {
 const qs = new URLSearchParams(location.search);
 const startId = qs.get("league");
 const src = store.get("source"); if(src) $("#source").value = src;
+if(!$("#source").value || !SRC_ORDER.concat("blend").includes($("#source").value)) $("#source").value = "blend";
 if(qs.get("trade")) S.pendingTrade = decodeTrade(qs.get("trade"));
 applyPrefs();
 updateUserChip();
